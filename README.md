@@ -35,12 +35,12 @@ cp .env.example .env
 
 ```env
 # API 配置
-API_BASE_URL=https://api.vectorengine.cn/v1
+API_BASE_URL=https://cf.api.fan/v1
 API_KEY=你的API密钥
 
 # 模型配置
-GENERATE_API_MODEL=gemini-3-pro-image-preview
-ANALYZE_API_MODEL=gemini-3.1-flash-lite-preview
+GENERATE_API_MODEL=gpt-image-2
+ANALYZE_API_MODEL=deepseek-v4-flash-vision-exp
 ```
 
 ### 环境变量说明
@@ -49,8 +49,8 @@ ANALYZE_API_MODEL=gemini-3.1-flash-lite-preview
 |--------|------|------|
 | `API_BASE_URL` | 是 | AI API 地址 |
 | `API_KEY` | 是 | AI API 密钥 |
-| `GENERATE_API_MODEL` | 否 | 生成详情页使用的模型，默认 `gemini-3-pro-image-preview` |
-| `ANALYZE_API_MODEL` | 否 | 分析图片使用的模型，默认 `gemini-3.1-flash-lite-preview` |
+| `GENERATE_API_MODEL` | 否 | 生成详情页使用的模型，默认 `gpt-image-2` |
+| `ANALYZE_API_MODEL` | 否 | 分析图片使用的模型，默认 `deepseek-v4-flash-vision-exp` |
 
 ## 注意事项
 

@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 .idea/
+Thumbs.db
+Desktop.ini
+
 
 # debug
 npm-debug.log*

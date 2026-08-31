@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 import sharp from "sharp";
 import dns from "dns";
 
@@ -77,7 +77,7 @@ function buildScreenPrompt(
 
   const constraints = `
 === CONSTRAINTS ===
-- Portrait orientation, 750×1334 pixels
+- Portrait orientation, 1024×1536 pixels
 - High-end editorial e-commerce product detail page
 - Keep the product EXACTLY as-is, do NOT redraw or modify the product appearance
 - DESIGN RULE: Text Function Segregation. Large decorative titles/tags can be vertical, massive, overlapping, or cropped to create visual tension. HOWEVER, informational body copy/paragraphs MUST maintain grounded horizontal legibility.
@@ -216,15 +216,19 @@ export async function POST(request: Request) {
     };
 
     const indices = imageIndices[screenType] || [0];
-    const imageContents: any[] = [];
-    for (const idx of indices) {
-      if (compressedImages[idx]) {
-        imageContents.push({
-          type: "image_url" as const,
-          image_url: { url: compressedImages[idx] }
+    // 只保留实际存在的参考图；若映射的索引全越界（图片不足），回退到第一张避免空 image 参数
+    const pickedIndices = indices.filter((idx) => !!compressedImages[idx]);
+    const useIndices = pickedIndices.length > 0 ? pickedIndices : [0];
+    // base64 data URL → File，作为参考图传给 gpt-image-2
+    const imageFiles = await Promise.all(
+      useIndices.map(async (idx) => {
+        const img = compressedImages[idx];
+        const match = img.match(/^data:image\/\w+;base64,(.+)$/);
+        return toFile(Buffer.from(match ? match[1] : img, "base64"), null, {
+          type: "image/jpeg"
         });
-      }
-    }
+      })
+    );
 
     const openai = new OpenAI({
       baseURL: CONFIG.baseURL,
@@ -235,41 +239,22 @@ export async function POST(request: Request) {
       }
     });
 
-    const response = await openai.chat.completions.create({
+    const response = await openai.images.edit({
       model: CONFIG.model,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            ...imageContents
-          ]
-        }
-      ]
+      image: imageFiles,
+      prompt,
+      size: "1024x1536"
     });
 
-    const content = response.choices?.[0]?.message?.content;
-
-    if (!content) {
-      return NextResponse.json(
-        { error: "AI 未返回内容" },
-        { status: 500 }
-      );
-    }
-
-    // 从响应中提取 base64 图片
-    const imgMatch = content.match(/data:image\/([\w]+);base64,([A-Za-z0-9+/=\s]+)/);
-    if (!imgMatch) {
-      console.error("No image found in response. Content starts with:", content.substring(0, 200));
+    const imageBase64 = response.data?.[0]?.b64_json;
+    if (!imageBase64) {
       return NextResponse.json(
         { error: "AI 响应中未找到图片数据" },
         { status: 500 }
       );
     }
 
-    const imageFormat = imgMatch[1];
-    const imageBase64 = imgMatch[2].replace(/\s/g, "");
-    const dataUrl = `data:image/${imageFormat};base64,${imageBase64}`;
+    const dataUrl = `data:image/png;base64,${imageBase64}`;
 
     return NextResponse.json({ image: dataUrl, prompt });
 

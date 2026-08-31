@@ -10,7 +10,7 @@ export const maxDuration = 240;
 const CONFIG = {
   baseURL: process.env.API_BASE_URL!,
   apiKey: process.env.API_KEY!,
-  model: process.env.ANALYZE_API_MODEL || "gemini-3.1-flash-lite-preview"
+  model: process.env.ANALYZE_API_MODEL || "deepseek-v4-flash-vision-exp"
 };
 
 // 完整 JSON schema — 始终请求全部字段供出图使用
